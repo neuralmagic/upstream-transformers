@@ -19,7 +19,15 @@ import torch
 import torch.nn.functional as F
 import torch.utils.checkpoint
 from torch import nn
-from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
+
+import os
+if "USE_FUSED_CROSSENTROPY_LOSS" in os.environ and os.environ["USE_FUSED_CROSSENTROPY_LOSS"] == "1":
+    from torch.nn import BCEWithLogitsLoss, MSELoss
+    from flash_attn.losses.cross_entropy import CrossEntropyLoss # as FusedCrossEntropyLoss
+    print(f"----****----[eldar debug]----****---- Using fused CrossEntropyLoss from flash_attn.losses.cross_entropy ----****----[eldar debug]----****----")
+else:
+    from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
+
 
 from ...activations import ACT2FN
 from ...modeling_attn_mask_utils import _prepare_4d_causal_attention_mask
