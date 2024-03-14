@@ -175,8 +175,8 @@ _deps = [
     "timeout-decorator",
     "timm",
     "tokenizers>=0.14,<0.19",
-    "torch",
-    "torchaudio",
+    "torch>=2.2.1,<2.3"
+    "torchaudio>=2.2.1,<2.3",
     "torchvision",
     "pyctcdecode>=0.4.0",
     "tqdm>=4.27",
