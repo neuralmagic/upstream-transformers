@@ -179,6 +179,11 @@ def prepare_fa2_from_position_ids(query, key, value, position_ids):
 
     return (query, key, value, indices_q, (cu_seq_lens, cu_seq_lens), (max_length, max_length))
 
+# NOTE: our custom way to detect when sequences are packed together to trigger the use of `flash_attn_varlen_func`
+def _is_sequence_packed(position_ids):
+    # if any of the samples in the batch contains multiple sequences
+    # position_ids will be of the form: [0, 1, 2, 3, 4, 0, 1, 2]
+    return position_ids is not None and not (torch.diff(position_ids, dim=-1) >= 0).all()
 
 def _flash_attention_forward(
     query_states: torch.Tensor,
@@ -241,7 +246,7 @@ def _flash_attention_forward(
         flash_kwargs["softcap"] = softcap
 
     # Contains at least one padding token in the sequence
-    if attention_mask is not None:
+    if attention_mask is not None and not _is_sequence_packed(position_ids):
         batch_size = query_states.shape[0]
         query_states, key_states, value_states, indices_q, cu_seq_lens, max_seq_lens = _upad_input(
             query_states, key_states, value_states, attention_mask, query_length
