@@ -803,9 +803,17 @@ class DataCollatorForLanguageModeling(DataCollatorMixin):
     def torch_call(self, examples: List[Union[List[int], Any, Dict[str, Any]]]) -> Dict[str, Any]:
         # Handle dict or lists with proper padding and conversion to tensor.
         if isinstance(examples[0], Mapping):
-            batch = pad_without_fast_tokenizer_warning(
-                self.tokenizer, examples, return_tensors="pt", pad_to_multiple_of=self.pad_to_multiple_of
-            )
+            # if position_ids are given and all samples are of the same length
+            # we infer this is our custom pretraining dataset which is fully prepared
+            # so we just collate it into a batch
+            if 'position_ids' in examples[0] and all(len(v) == len(next(iter(examples[0].values()))) for example in examples for v in example.values()):
+                batch = {}
+                for k in examples[0].keys():
+                    batch[k] = _torch_collate_batch([example[k] for example in examples], self.tokenizer)
+            else:
+                batch = pad_without_fast_tokenizer_warning(
+                    self.tokenizer, examples, return_tensors="pt", pad_to_multiple_of=self.pad_to_multiple_of
+                )
         else:
             batch = {
                 "input_ids": _torch_collate_batch(examples, self.tokenizer, pad_to_multiple_of=self.pad_to_multiple_of)
